@@ -1,0 +1,44 @@
+{
+  "dataset": "carrada",
+  "modality": "range_doppler_numpy",
+  "splits": [
+    "train"
+  ],
+  "normalize": true,
+  "normalize_method": "log_minmax",
+  "resize": true,
+  "target_shape": [
+    128,
+    32
+  ],
+  "augment_train": false,
+  "augmentation_config": {
+    "horizontal_flip_prob": 0.5,
+    "gaussian_noise_std": 0.02,
+    "intensity_scale_range": [
+      0.9,
+      1.1
+    ],
+    "extra_augmented_copies": 1
+  },
+  "seed": 42,
+  "results": {
+    "output_root": "C:\\AI-Based-Radar-Target-Classification\\dataset\\processed",
+    "splits": {
+      "train": {
+        "split": "train",
+        "loaded": 3,
+        "valid": 3,
+        "saved": 3,
+        "skipped": 0,
+        "augmented": 0,
+        "validation": {
+          "total": 3,
+          "valid": 3,
+          "skipped": 0,
+          "reasons": {}
+        }
+      }
+    }
+  }
+}

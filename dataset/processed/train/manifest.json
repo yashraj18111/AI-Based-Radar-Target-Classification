@@ -1,0 +1,58 @@
+{
+  "split": "train",
+  "modality": "range_doppler_numpy",
+  "num_samples": 3,
+  "entries": [
+    {
+      "sequence_id": "2019-09-16-12-52-12",
+      "frame_id": "000000",
+      "processed_path": "train\\frames\\2019-09-16-12-52-12__000000.npz",
+      "num_objects": 1,
+      "metadata": {
+        "source_path": "C:\\AI-Based-Radar-Target-Classification\\dataset\\raw\\CARRADA\\2019-09-16-12-52-12\\range_doppler_numpy\\000000.npy",
+        "resize_from": [
+          256,
+          64
+        ],
+        "resize_to": [
+          128,
+          32
+        ]
+      }
+    },
+    {
+      "sequence_id": "2019-09-16-12-52-12",
+      "frame_id": "000001",
+      "processed_path": "train\\frames\\2019-09-16-12-52-12__000001.npz",
+      "num_objects": 1,
+      "metadata": {
+        "source_path": "C:\\AI-Based-Radar-Target-Classification\\dataset\\raw\\CARRADA\\2019-09-16-12-52-12\\range_doppler_numpy\\000001.npy",
+        "resize_from": [
+          256,
+          64
+        ],
+        "resize_to": [
+          128,
+          32
+        ]
+      }
+    },
+    {
+      "sequence_id": "2019-09-16-12-52-12",
+      "frame_id": "000002",
+      "processed_path": "train\\frames\\2019-09-16-12-52-12__000002.npz",
+      "num_objects": 1,
+      "metadata": {
+        "source_path": "C:\\AI-Based-Radar-Target-Classification\\dataset\\raw\\CARRADA\\2019-09-16-12-52-12\\range_doppler_numpy\\000002.npy",
+        "resize_from": [
+          256,
+          64
+        ],
+        "resize_to": [
+          128,
+          32
+        ]
+      }
+    }
+  ]
+}

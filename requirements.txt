@@ -1,0 +1,27 @@
+# Core scientific computing
+numpy>=2.0.0
+scipy>=1.11.0
+pandas>=2.1.0
+
+# Deep learning (PyTorch)
+torch
+torchvision
+
+# Data handling & evaluation
+scikit-learn
+seaborn
+
+# Image processing & visualization
+matplotlib
+Pillow
+
+# API
+fastapi
+uvicorn
+python-multipart
+
+# Development & testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=24.1.0
+isort>=5.13.0

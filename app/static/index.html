@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RadarSense AI - Radar Target Classification System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Background Glow & Grid -->
+  <div class="bg-glow"></div>
+  <div class="bg-grid"></div>
+
+  <div class="app-container">
+    <!-- Header / Navbar -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/>
+            <path d="M12 6a6 6 0 1 0 6 6 6 6 0 0 0-6-6zm0 8a2 2 0 1 1 2-2 2 2 0 0 1-2 2z"/>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <h1>RadarSense AI</h1>
+          <span>Micro-Doppler Target Classification & Spectrogram Engine</span>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge py-badge">PyTorch 2.0</span>
+        <span class="badge cnn-badge">2D CNN</span>
+        <span class="badge status-badge" id="systemStatus">Online</span>
+      </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <main class="main-grid">
+      <!-- Left Column: Inputs & Controls -->
+      <section class="panel input-panel">
+        <div class="panel-header">
+          <h2>1. Radar Signal Input</h2>
+          <p>Upload a raw micro-Doppler radar CSV matrix or pick a sample preset.</p>
+        </div>
+
+        <!-- File Dropzone -->
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" accept=".csv,.txt" hidden />
+          <div class="dropzone-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <p class="dropzone-text">Drag & drop radar CSV signal file here</p>
+          <p class="dropzone-sub">or <button type="button" class="btn-link" id="browseBtn">browse computer</button></p>
+          <span class="file-name" id="fileName">No file selected</span>
+        </div>
+
+        <!-- Preset Buttons -->
+        <div class="presets-section">
+          <h3>Quick Test Presets</h3>
+          <div class="preset-buttons">
+            <button class="preset-btn car-preset" onclick="loadSamplePreset('car')">
+              <span class="icon">🚗</span>
+              <span>Car Signal</span>
+            </button>
+            <button class="preset-btn drone-preset" onclick="loadSamplePreset('drone')">
+              <span class="icon">🛸</span>
+              <span>Drone Signal</span>
+            </button>
+            <button class="preset-btn person-preset" onclick="loadSamplePreset('person')">
+              <span class="icon">🚶</span>
+              <span>Person Signal</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Signal Matrix Properties -->
+        <div class="stats-card">
+          <h3>Signal Matrix Properties</h3>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-label">Dimensions</span>
+              <span class="stat-value" id="statShape">--</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Min Power (dB)</span>
+              <span class="stat-value" id="statMin">--</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Max Power (dB)</span>
+              <span class="stat-value" id="statMax">--</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Mean Intensity</span>
+              <span class="stat-value" id="statMean">--</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Visual Spectrogram & Predictions -->
+      <section class="panel output-panel">
+        <div class="panel-header">
+          <h2>2. Signal-to-Spectrogram & PyTorch Inference</h2>
+          <p>Generated micro-Doppler heatmap image and target probabilities.</p>
+        </div>
+
+        <div class="output-grid">
+          <!-- Rendered Spectrogram Image Container -->
+          <div class="spectrogram-card">
+            <div class="spectrogram-header">
+              <span>Generated Spectrogram Image</span>
+              <span class="spectrogram-meta">128 × 128 (Viridis RGB)</span>
+            </div>
+            <div class="spectrogram-display" id="spectrogramDisplay">
+              <div class="placeholder-text">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <p>Upload a signal or select a preset to generate the spectrogram image</p>
+              </div>
+              <img id="spectrogramImg" src="" alt="Micro-Doppler Spectrogram" class="hidden" />
+            </div>
+          </div>
+
+          <!-- Prediction Results & Probabilities -->
+          <div class="prediction-card">
+            <div class="prediction-banner" id="predictionBanner">
+              <div class="banner-label">Detected Radar Target</div>
+              <div class="banner-title" id="predClass">Awaiting Input</div>
+              <div class="banner-confidence" id="predConfidence">-- % Confidence</div>
+            </div>
+
+            <!-- Probability Meter Bars -->
+            <div class="probabilities-section">
+              <h3>Target Classification Breakdown</h3>
+
+              <div class="prob-row">
+                <div class="prob-info">
+                  <span class="prob-name">🚗 Car</span>
+                  <span class="prob-val" id="valCar">0.0%</span>
+                </div>
+                <div class="prob-bar-track">
+                  <div class="prob-bar-fill car-fill" id="barCar" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div class="prob-row">
+                <div class="prob-info">
+                  <span class="prob-name">🛸 Drone</span>
+                  <span class="prob-val" id="valDrone">0.0%</span>
+                </div>
+                <div class="prob-bar-track">
+                  <div class="prob-bar-fill drone-fill" id="barDrone" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div class="prob-row">
+                <div class="prob-info">
+                  <span class="prob-name">🚶 Person</span>
+                  <span class="prob-val" id="valPerson">0.0%</span>
+                </div>
+                <div class="prob-bar-track">
+                  <div class="prob-bar-fill person-fill" id="barPerson" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Architecture Footer Card -->
+        <div class="arch-card">
+          <div class="arch-item">
+            <span class="arch-title">Model Architecture:</span>
+            <span>4-Block PyTorch 2D CNN with BatchNorm, Dropout & Adaptive Pooling</span>
+          </div>
+          <div class="arch-item">
+            <span class="arch-title">Pipeline:</span>
+            <span>Raw CSV Signal &rarr; Log-dB Normalization &rarr; Viridis RGB Spectrogram &rarr; PyTorch Softmax</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
