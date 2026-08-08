@@ -127,9 +127,24 @@ After training, check `output/figures/` for:
 
 ---
 
+## ⬇️ Pre-Trained Model
+
+A pre-trained model is available on [GitHub Releases](https://github.com/yashraj18111/AI-Based-Radar-Target-Classification/releases/tag/v1.0.0).
+
+**Auto-download (recommended):** The model is **automatically downloaded** when you run `evaluate` or `serve` commands — no manual steps needed!
+
+```bash
+# This will auto-download the model if not present, then run evaluation
+python main.py evaluate
+```
+
+**Manual download:** If auto-download fails, download `best_radar_model.pkl` from the [v1.0.0 release](https://github.com/yashraj18111/AI-Based-Radar-Target-Classification/releases/tag/v1.0.0) and place it in `output/models/`.
+
+---
+
 ## ⚠️ Important Notes
 
-- The **trained model file** (`output/models/best_radar_model.pkl`) is **not included** in this repo (144 MB — exceeds GitHub's limit). Run `main.py` to train and generate it locally.
+- The **trained model file** (`output/models/best_radar_model.pkl`) is hosted on GitHub Releases (144 MB) and will be **auto-downloaded** when needed.
 - The dataset (`dataset/raw/data/`) is included in the repo.
 
 ---

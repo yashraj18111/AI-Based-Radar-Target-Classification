@@ -10,9 +10,50 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import urllib.request
 from pathlib import Path
 
 import config
+
+# ---------------------------------------------------------------------------
+# GitHub Releases — pre-trained model download
+# ---------------------------------------------------------------------------
+
+# Update this URL after creating the GitHub Release and uploading the model file.
+# Format: https://github.com/<user>/<repo>/releases/download/<tag>/<filename>
+MODEL_DOWNLOAD_URL = (
+    "https://github.com/yashraj18111/AI-Based-Radar-Target-Classification"
+    "/releases/download/v1.0.0/best_radar_model.pkl"
+)
+
+MODEL_PATH = config.MODEL_OUTPUT_DIR / "best_radar_model.pkl"
+
+
+def download_model_if_missing() -> None:
+    """Auto-download the pre-trained model from GitHub Releases if not found locally."""
+    if MODEL_PATH.exists():
+        return  # Already present, skip download
+
+    logger.info("Pre-trained model not found locally. Downloading from GitHub Releases...")
+    MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        def _progress(block_num, block_size, total_size):
+            downloaded = block_num * block_size
+            if total_size > 0:
+                pct = min(downloaded / total_size * 100, 100)
+                print(f"\r  Downloading model... {pct:.1f}%", end="", flush=True)
+
+        urllib.request.urlretrieve(MODEL_DOWNLOAD_URL, MODEL_PATH, reporthook=_progress)
+        print()  # newline after progress
+        logger.info(f"Model downloaded successfully to {MODEL_PATH}")
+    except Exception as exc:
+        logger.error(
+            f"Failed to download pre-trained model: {exc}\n"
+            f"  You can manually download it from:\n  {MODEL_DOWNLOAD_URL}\n"
+            f"  and place it at: {MODEL_PATH}"
+        )
+        sys.exit(1)
 
 # Configure logging format
 logging.basicConfig(
@@ -45,6 +86,7 @@ def command_train(epochs: int = config.TRAINING.epochs):
 def command_evaluate():
     """Evaluate trained PyTorch model on test data split."""
     logger.info("--- Phase 3: Model Diagnostic Evaluation ---")
+    download_model_if_missing()  # Auto-download pre-trained model if needed
     from evaluation.evaluate_pytorch import run_evaluation
 
     results = run_evaluation()
@@ -55,6 +97,7 @@ def command_evaluate():
 def command_serve(host: str = "127.0.0.1", port: int = 8000):
     """Launch FastAPI web application server."""
     logger.info("--- Phase 4: Launching FastAPI Web Application ---")
+    download_model_if_missing()  # Auto-download pre-trained model if needed
     import uvicorn
 
     print(f"\n[SERVER ONLINE] Starting RadarSense AI Web Dashboard at http://{host}:{port}")
@@ -66,7 +109,7 @@ def command_run_all(epochs: int = 10, max_samples: int = 500):
     logger.info("--- Running Full End-to-End Radar Classification Pipeline ---")
     command_convert(max_samples=max_samples)
     command_train(epochs=epochs)
-    command_evaluate()
+    command_evaluate()  # will skip download since model was just trained
     print("\n[PIPELINE COMPLETE] System ready. Launching FastAPI Server...")
     command_serve()
 
