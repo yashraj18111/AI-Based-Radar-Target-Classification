@@ -1,4 +1,12 @@
-# Production Dockerfile for Render Web Service (MERN + PyTorch)
+# Stage 1: Build the React Frontend (Vite)
+FROM node:20-slim AS client-builder
+WORKDIR /app/client
+COPY client/package*.json ./
+RUN npm install
+COPY client/ ./
+RUN npm run build
+
+# Stage 2: Production Python + Node.js Runtime for Render
 FROM python:3.11-slim
 
 # Install system dependencies & Node.js 20
@@ -32,7 +40,9 @@ COPY preprocessing ./preprocessing
 COPY ml_engine ./ml_engine
 COPY dataset/raw ./dataset/raw
 COPY server ./server
-COPY client/dist ./client/dist
+
+# Copy built frontend from Stage 1 (so Render also serves UI directly)
+COPY --from=client-builder /app/client/dist ./client/dist
 
 # Expose Render port
 ENV PORT=5000
