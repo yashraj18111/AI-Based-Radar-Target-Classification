@@ -1,32 +1,15 @@
-"""Data loading, preprocessing, and visualization for radar datasets."""
+"""Preprocessing utilities for the micro-Doppler radar classification pipeline."""
 
-from preprocessing.loader import RadarDataset, RadarSample, create_dataset
-from preprocessing.preprocess import PreprocessConfig, run_preprocessing
-from preprocessing.splitter import SplitManifest, summarize_splits
-from preprocessing.storage import load_processed_sample, load_manifest
-from preprocessing.transforms import transform_sample
-from preprocessing.validators import filter_valid_samples
+from preprocessing.signal_to_image import (
+    convert_signal_to_spectrogram_image,
+    process_all_raw_signals,
+    read_raw_csv_signal,
+    save_spectrogram_image,
+)
 
 __all__ = [
-    "RadarDataset",
-    "RadarSample",
-    "create_dataset",
-    "PreprocessConfig",
-    "run_preprocessing",
-    "SplitManifest",
-    "summarize_splits",
-    "load_processed_sample",
-    "load_manifest",
-    "transform_sample",
-    "filter_valid_samples",
-    "visualize_sample",
-    "visualize_batch",
+    "read_raw_csv_signal",
+    "convert_signal_to_spectrogram_image",
+    "save_spectrogram_image",
+    "process_all_raw_signals",
 ]
-
-
-def __getattr__(name: str):
-    if name in ("visualize_sample", "visualize_batch"):
-        from preprocessing import visualization
-
-        return getattr(visualization, name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

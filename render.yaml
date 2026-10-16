@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: radar-target-classification-api
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: PYTHON_CMD
+        value: python3
+      - key: MONGODB_URI
+        sync: false # User enters their MongoDB Atlas URI in Render dashboard
+      - key: GOOGLE_DRIVE_FOLDER_URL
+        value: https://drive.google.com/drive/folders/1yashraj18111-radar-samples?usp=sharing

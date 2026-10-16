@@ -17,28 +17,35 @@ This project processes raw FMCW radar CSV data, converts signals into **Range-Do
 
 ```
 AI-Based-Radar-Target-Classification/
+├── client/                  # MERN Frontend: React + Vite (Hosted on Vercel)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── GoogleDriveBox.jsx    # Dedicated Google Drive input & dataset card
+│   │   │   ├── RadarDropzone.jsx     # Drag & drop signal uploader & presets
+│   │   │   ├── SpectrogramResults.jsx# Generated spectrogram & target probabilities
+│   │   │   ├── ClassificationHistory.jsx # Live MongoDB history feed
+│   │   │   └── Navbar.jsx
+│   │   └── App.jsx
+│   └── vercel.json          # Vercel deployment configuration
+├── server/                  # MERN Backend: Node.js + Express + MongoDB (Hosted on Render)
+│   ├── config/db.js         # MongoDB connection with in-memory fallback
+│   ├── controllers/         # Radar inference & Google Drive link fetcher
+│   ├── models/              # Classification history Mongoose schema
+│   └── server.js            # Express REST API
+├── ml_engine/
+│   └── predict.py           # Python CLI inference bridge for PyTorch CNN
 ├── dataset/
-│   └── raw/data/
-│       ├── People/          # Raw radar CSV files for people
-│       ├── Drones/          # Raw radar CSV files for drones
-│       └── Cars/            # Raw radar CSV files for cars
+│   └── raw/data/            # Raw micro-Doppler radar CSV signals (Cars, Drones, People)
 ├── model/
-│   └── radar_cnn_pytorch.py # CNN model architecture
-├── preprocessing/
-│   ├── loader.py            # Data loading utilities
-│   ├── preprocess.py        # Signal preprocessing
-│   ├── signal_to_image.py   # Spectrogram generation
-│   ├── splitter.py          # Train/val/test split
-│   └── transforms.py        # Data augmentation
-├── training/
-│   └── train_pytorch.py     # Training pipeline
-├── evaluation/
-│   └── evaluate_pytorch.py  # Model evaluation & metrics
+│   └── radar_cnn_pytorch.py # PyTorch 2D CNN architecture
+├── preprocessing/           # Signal preprocessing & Viridis spectrogram synthesis
 ├── output/
-│   ├── figures/             # Training curves, confusion matrix, ROC curves
-│   ├── logs/                # Training logs
-│   └── models/              # Saved model checkpoints (not tracked by git)
-├── main.py                  # Entry point
+│   ├── figures/             # Confusion matrix, ROC, training curves
+│   └── models/              # Saved model checkpoints
+├── Dockerfile               # Production container for Render deployment
+├── render.yaml              # Render Blueprint deployment config
+├── DEPLOYMENT.md            # Step-by-step Render + Vercel hosting guide
+├── requirements-deploy.txt  # Cloud-optimized CPU PyTorch dependencies
 └── requirements.txt
 ```
 
@@ -101,6 +108,34 @@ After training, check `output/figures/` for:
 - `confusion_matrix.png` — Per-class prediction accuracy
 - `roc_curves.png` — ROC curves for each class
 - `spectrogram_predictions.png` — Sample predictions
+
+---
+
+## 🌐 MERN Web Application & Live Testing
+
+A full-stack modern dashboard built with **React (Vite)**, **Express (Node.js)**, **MongoDB**, and **PyTorch**:
+
+- 📁 **Dedicated Google Drive Test Hub:** Main page features a dedicated box with a direct link to the sample radar dataset, 1-click sample downloads (`Car`, `Drone`, `Person`), and an instant Google Drive link importer where users can paste shareable file links to test the model on the fly.
+- 🎯 **Real-Time Spectrogram Generation:** Automatically renders 128×128 Viridis micro-Doppler heatmaps.
+- 📊 **Confidence & Softmax Meters:** Visual probability distributions and matrix properties.
+- 🗄️ **MongoDB History:** Logs and persists past user classifications.
+- ☁️ **Cloud Deployment Ready:** Pre-configured for hosting the frontend on **Vercel** and the backend on **Render** (see [DEPLOYMENT.md](file:///c:/AI-Based-Radar-Target-Classification/DEPLOYMENT.md)).
+
+### Run MERN App Locally:
+
+```bash
+# Terminal 1: Start Express Backend
+cd server
+npm install
+node server.js
+
+# Terminal 2: Start React Frontend
+cd client
+npm install
+npm run dev
+```
+
+Visit `http://localhost:3000` in your browser.
 
 ---
 

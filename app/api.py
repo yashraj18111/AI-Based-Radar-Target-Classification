@@ -1,14 +1,11 @@
-"""
-FastAPI REST API Service for Radar Target Classification & Spectrogram Generation.
-"""
-
-from __future__ import annotations
+# api.py
+# FastAPI server so web apps or frontend clients can upload radar CSVs
+# and get back the predicted target class + generated spectrogram image
 
 import base64
 import io
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -23,14 +20,14 @@ from preprocessing.signal_to_image import convert_signal_to_spectrogram_image, r
 
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI App
+# initialize FastAPI App
 app = FastAPI(
     title="AI-Based Radar Target Classification API",
     description="Micro-Doppler Radar Signal to Spectrogram Image Generation and Target Classification",
     version="1.0.0",
 )
 
-# Enable CORS for local development
+# CORS middleware for local frontend development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,29 +36,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global model instance
-model_instance: Optional[RadarNeuralClassifier] = None
+# global model reference - lazy loading so server starts instantly without waiting for pkl load
+model_instance = None
 
 
-def get_active_classifier() -> RadarNeuralClassifier:
-    """Lazy load or return the active model classifier."""
+def get_active_classifier():
+    """Lazy load the trained model checkpoint when first request arrives."""
     global model_instance
     if model_instance is None:
         ckpt_path = config.MODEL_OUTPUT_DIR / "best_radar_model.pkl"
         classifier = load_neural_classifier(ckpt_path)
         if classifier is not None:
             model_instance = classifier
-            logger.info(f"Loaded trained classifier checkpoint from {ckpt_path}.")
+            print(f"loaded model from {ckpt_path}")
         else:
-            logger.info("No trained checkpoint found. Instantiating fresh classifier...")
+            print("no saved model found, creating fresh model instance...")
             model_instance = RadarNeuralClassifier()
 
     return model_instance
 
 
 @app.get("/api/health")
-def health_check() -> Dict[str, Any]:
-    """Health check endpoint."""
+def health_check():
+    """Simple status check."""
     return {
         "status": "online",
         "target_classes": config.CLASS_NAMES,
@@ -70,8 +67,8 @@ def health_check() -> Dict[str, Any]:
 
 
 @app.get("/api/info")
-def system_info() -> Dict[str, Any]:
-    """System information & target class metadata."""
+def system_info():
+    """Dataset & target class metadata for frontend displays."""
     return {
         "dataset_name": config.DATASET_NAME,
         "target_classes": config.CLASS_NAMES,
@@ -82,13 +79,13 @@ def system_info() -> Dict[str, Any]:
 
 
 @app.post("/api/predict")
-async def predict_radar_signal(file: UploadFile = File(...)) -> Dict[str, Any]:
+async def predict_radar_signal(file: UploadFile = File(...)):
     """
-    Process an uploaded radar CSV signal file:
-    1. Read CSV matrix into NumPy array.
-    2. Convert signal to a normalized 3-channel RGB spectrogram image.
-    3. Encode spectrogram image to Base64 PNG.
-    4. Run Model inference -> return predicted target class & probability breakdown.
+    Accepts uploaded radar signal CSV file:
+    1. Reads matrix
+    2. Converts to spectrogram image
+    3. Encodes to base64 PNG so frontend can display it immediately
+    4. Runs inference and returns prediction + probability scores
     """
     if not file.filename.endswith((".csv", ".txt")):
         raise HTTPException(
@@ -103,23 +100,22 @@ async def predict_radar_signal(file: UploadFile = File(...)) -> Dict[str, Any]:
         if signal_matrix.size == 0:
             raise HTTPException(status_code=400, detail="Uploaded CSV file is empty.")
 
-        # 1. Signal-to-Spectrogram Image generation
+        # 1. signal -> spectrogram image
         spectrogram_rgb = convert_signal_to_spectrogram_image(signal_matrix)
 
-        # 2. Convert RGB image to Base64 PNG data URL
+        # 2. encode RGB image to base64 PNG data URL
         pil_img = Image.fromarray(spectrogram_rgb, mode="RGB")
         buffered = io.BytesIO()
         pil_img.save(buffered, format="PNG")
         img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
         image_data_url = f"data:image/png;base64,{img_base64}"
 
-        # 3. Model Inference
+        # 3. model prediction
         classifier = get_active_classifier()
 
-        # If model is not yet fit, train lightweight fit on sample or return fallback
         if not hasattr(classifier.model, "classes_"):
             from training.train_pytorch import Trainer
-            logger.info("Fitting model on dataset...")
+            print("fitting model before running inference...")
             trainer = Trainer()
             classifier = trainer.fit(epochs=2)
 
@@ -156,8 +152,8 @@ async def predict_radar_signal(file: UploadFile = File(...)) -> Dict[str, Any]:
 
 
 @app.get("/api/samples")
-def get_sample_presets() -> List[Dict[str, str]]:
-    """Return pre-configured sample CSV files for quick UI testing."""
+def get_sample_presets():
+    """Return pre-configured sample CSV files for frontend testing."""
     samples = []
     raw_dir = config.RAW_DATA_DIR
 
@@ -181,7 +177,7 @@ def get_sample_presets() -> List[Dict[str, str]]:
 
 
 @app.get("/api/sample-content/{class_name}")
-def get_sample_content(class_name: str) -> Dict[str, Any]:
+def get_sample_content(class_name: str):
     """Fetch content of a sample CSV for a specific target class."""
     if class_name not in config.CLASS_NAMES:
         raise HTTPException(status_code=404, detail="Class not found.")
@@ -238,7 +234,7 @@ def get_sample_content(class_name: str) -> Dict[str, Any]:
     }
 
 
-# Mount static directory for frontend UI
+# serve static web files
 static_dir = Path(__file__).parent / "static"
 static_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")

@@ -1,15 +1,8 @@
-"""
-Model Diagnostic Evaluation and Report Generator.
-
-Evaluates the trained model on test spectrogram data, computes multi-class metrics,
-and renders publication-quality Seaborn Confusion Matrix, ROC curves, and sample prediction grids.
-"""
-
-from __future__ import annotations
+# evaluate_pytorch.py
+# evaluates the trained model on test data and plots confusion matrix + ROC curves
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,11 +25,10 @@ from training.train_pytorch import load_all_spectrogram_data
 logger = logging.getLogger(__name__)
 
 
-def evaluate_model(
-    checkpoint_path: Optional[Union[str, Path]] = None,
-    figure_dir: Path = config.FIGURE_OUTPUT_DIR,
-) -> Dict[str, Union[float, Dict]]:
-    """Evaluate trained model on test data split and save visual reports."""
+def evaluate_model(checkpoint_path=None, figure_dir=None):
+    """Evaluates the trained model on the test split and saves metrics/plots."""
+    if figure_dir is None:
+        figure_dir = config.FIGURE_OUTPUT_DIR
     figure_dir = Path(figure_dir)
     figure_dir.mkdir(parents=True, exist_ok=True)
 
@@ -45,24 +37,23 @@ def evaluate_model(
 
     classifier = load_neural_classifier(checkpoint_path)
     if classifier is None:
-        raise FileNotFoundError(f"Classifier checkpoint not found at {checkpoint_path}. Train model first.")
+        raise FileNotFoundError(f"model checkpoint not found at {checkpoint_path}. Train model first!")
 
     X, y = load_all_spectrogram_data()
 
-    # Stratified split to evaluate on test set
-    np.random.seed(config.TRAINING.seed)
+    # same 80/20 train/val split using seed so test indices match training setup
+    np.random.seed(config.SEED)
     indices = np.random.permutation(len(X))
     split_idx = int(len(X) * 0.8)
     test_idx = indices[split_idx:]
 
     X_test, y_test = X[test_idx], y[test_idx]
 
-    logger.info(f"Evaluating model on test set ({len(X_test)} samples)...")
+    print(f"evaluating model on test set ({len(X_test)} samples)...")
 
     y_pred = classifier.predict(X_test)
     y_prob = classifier.predict_proba(X_test)
 
-    # Calculate overall metrics
     acc = accuracy_score(y_test, y_pred)
     prec = precision_score(y_test, y_pred, average="weighted", zero_division=0)
     rec = recall_score(y_test, y_pred, average="weighted", zero_division=0)
@@ -80,7 +71,7 @@ def evaluate_model(
     print(report_str)
     print("=======================================================\n")
 
-    # Generate Figures
+    # save plots
     cm = confusion_matrix(y_test, y_pred)
     plot_confusion_matrix(cm, figure_dir / "confusion_matrix.png")
     plot_roc_curves(y_test, y_prob, figure_dir / "roc_curves.png")
@@ -97,8 +88,8 @@ def evaluate_model(
     return results
 
 
-def plot_confusion_matrix(cm: np.ndarray, output_path: Path):
-    """Plot Seaborn confusion matrix heatmap."""
+def plot_confusion_matrix(cm, output_path):
+    """Plot confusion matrix heatmap with Seaborn."""
     plt.figure(figsize=(7, 6))
     sns.heatmap(
         cm,
@@ -116,11 +107,11 @@ def plot_confusion_matrix(cm: np.ndarray, output_path: Path):
     plt.tight_layout()
     plt.savefig(output_path, dpi=200)
     plt.close()
-    logger.info(f"Saved confusion matrix figure to {output_path}.")
+    print(f"saved confusion matrix to {output_path}")
 
 
-def plot_roc_curves(y_true: np.ndarray, y_prob: np.ndarray, output_path: Path):
-    """Plot multi-class ROC curves."""
+def plot_roc_curves(y_true, y_prob, output_path):
+    """Plot ROC curves for each target class."""
     plt.figure(figsize=(8, 6))
 
     colors = ["#FF4444", "#44AAFF", "#44FF44"]
@@ -140,25 +131,19 @@ def plot_roc_curves(y_true: np.ndarray, y_prob: np.ndarray, output_path: Path):
     plt.plot([0, 1], [0, 1], "k--", lw=1.5, label="Random Guess")
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
-    plt.xlabel("False Positive Rate (1 - Specificity)", fontsize=11)
-    plt.ylabel("True Positive Rate (Sensitivity)", fontsize=11)
-    plt.title("Multi-Class Receiver Operating Characteristic (ROC) Curves", fontsize=12, fontweight="bold")
+    plt.xlabel("False Positive Rate", fontsize=11)
+    plt.ylabel("True Positive Rate", fontsize=11)
+    plt.title("ROC Curves", fontsize=12, fontweight="bold")
     plt.legend(loc="lower right")
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(output_path, dpi=200)
     plt.close()
-    logger.info(f"Saved ROC curves figure to {output_path}.")
+    print(f"saved ROC curves to {output_path}")
 
 
-def plot_prediction_grid(
-    images: np.ndarray,
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    y_prob: np.ndarray,
-    output_path: Path,
-):
-    """Plot a grid of spectrogram images with prediction labels."""
+def plot_prediction_grid(images, y_true, y_pred, y_prob, output_path):
+    """Plot sample spectrogram grid with predicted labels."""
     if len(images) == 0:
         return
 
@@ -188,9 +173,9 @@ def plot_prediction_grid(
     plt.tight_layout()
     plt.savefig(output_path, dpi=200)
     plt.close()
-    logger.info(f"Saved spectrogram prediction grid figure to {output_path}.")
+    print(f"saved sample predictions grid to {output_path}")
 
 
-def run_evaluation() -> Dict[str, Union[float, Dict]]:
-    """CLI helper to run evaluation."""
+def run_evaluation():
+    """CLI helper."""
     return evaluate_model()
