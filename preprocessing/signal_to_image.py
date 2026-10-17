@@ -6,7 +6,13 @@ import json
 import logging
 from pathlib import Path
 
-import matplotlib.cm as cm
+import base64
+
+try:
+    import matplotlib.cm as cm
+except ImportError:
+    cm = None
+
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -14,6 +20,25 @@ from PIL import Image
 import config
 
 logger = logging.getLogger(__name__)
+
+# Precomputed 256-color Viridis RGB LUT fallback in case matplotlib is not installed in the runtime environment
+_FALLBACK_VIRIDIS_LUT = np.frombuffer(
+    base64.b64decode(
+        b"RAFURAJVRANXRQVYRQZaRQhbRglcRgteRgxfRg5hRw9iRxFjRxJlRxRmRxVnRxZpRxhqSBlrSBpsSBxuSB1vSB5w"
+        b"SCBxSCFySCJzSCN0RyV1RyZ2Ryd3Ryh4Ryp5Ryt6Ryx7Ri18Ri98RjB9RjF+RTJ/RTR/RTWARTaBRDeBRDmCQzqD"
+        b"QzuDQzyEQj2EQj6FQkCFQUGGQUKGQEOHQESHP0WHP0eIPkiIPkmJPUqJPUuJPUyJPE2KPE6KO1CKO1GKOlKLOlOL"
+        b"OVSLOVWLOFaLOFeMN1iMN1mMNlqMNluMNVyMNV2MNF6NNF+NM2CNM2GNMmKNMmONMWSNMWWNMWaNMGeNMGiNL2mN"
+        b"L2qNLmuOLmyOLm2OLW6OLW+OLHCOLHGOLHKOK3OOK3SOKnWOKnaOKneOKXiOKXmOKHqOKHqOKHuOJ3yOJ32OJ36OJ"
+        b"n+OJoCOJoGOJYKOJYONJISNJIWNJIaNI4eNI4iNI4mNIomNIoqNIouNIYyNIY2MIY6MII+MIJCMIJGMH5KMH5OLH"
+        b"5SLH5WLH5aLHpeKHpiKHpmKHpmKHpqJHpuJHpyJHp2IHp6IHp+IHqCHH6GHH6KGH6OGIKSFIKWFIaaFIaeEIqeEI6"
+        b"iDI6mCJKqCJauBJqyBJ62AKK5/Ka9/KrB+K7F9LLF9LrJ8L7N7MLR6MrV6M7Z5Nbd4Nrh3OLl2Obl2O7p1Pbt0Pr"
+        b"xzQL1yQr5xRL5wRb9vR8BuScFtS8JsTcJrT8NpUcRoU8VnVcZmV8ZlWcdkW8hiXslhYMlgYspfZMtdZ8xcacxba81"
+        b"Zbc5YcM5Wcs9VdNBUd9BSedFRfNJPftJOgdNMg9NLhtRJiNVHi9VGjdZEkNZDktdBldc/l9g+mtg8ndk6n9k4oto3"
+        b"pdo1p9szqtsyrdwwr9wust0std0rt90put4nvd4mv98kwt8ixd8hx+AfyuAezeAdz+Ec0uEb1OEa1+IZ2uIY3OIY"
+        b"3+MY4eMY5OMY5+QZ6eQZ7OQa7uUb8eUc8+Ue9uYf+OYh+uYi/eck"
+    ),
+    dtype=np.uint8,
+).reshape(256, 3)
 
 
 def read_raw_csv_signal(csv_path):
@@ -73,9 +98,13 @@ def convert_signal_to_spectrogram_image(signal_matrix, target_shape=config.SPECT
     # viridis output is RGBA so slice off the alpha channel with [:, :, :3]
     # i chose viridis because its perceptually uniform - equal data steps look equal to the eye
     # tried magma too but viridis gave cleaner separation when i visualized all 3 classes
-    colormap_fn = getattr(cm, colormap_name, cm.viridis)
-    rgb_float = colormap_fn(normalized)[:, :, :3]  # drop alpha
-    rgb_uint8 = (rgb_float * 255.0).astype(np.uint8)
+    if cm is not None:
+        colormap_fn = getattr(cm, colormap_name, cm.viridis)
+        rgb_float = colormap_fn(normalized)[:, :, :3]  # drop alpha
+        rgb_uint8 = (rgb_float * 255.0).astype(np.uint8)
+    else:
+        indices = np.clip((normalized * 255.0).astype(np.int32), 0, 255)
+        rgb_uint8 = _FALLBACK_VIRIDIS_LUT[indices]
 
     # step 4: resize to target shape using PIL bicubic
     # 128x128 is small enough to train fast but large enough to keep the doppler patterns visible
