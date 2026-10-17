@@ -15,4 +15,4 @@ services:
       - key: MONGODB_URI
         sync: false # User enters their MongoDB Atlas URI in Render dashboard
       - key: GOOGLE_DRIVE_FOLDER_URL
-        value: https://drive.google.com/drive/folders/1yashraj18111-radar-samples?usp=sharing
+        value: https://drive.google.com/drive/folders/1rVmUWYyHWgEyzrUYRLMaoy2uvZ0M1t_O?usp=sharing

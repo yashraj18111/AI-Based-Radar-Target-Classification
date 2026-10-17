@@ -175,6 +175,14 @@ exports.predictFromGoogleDrive = async (req, res) => {
     });
   }
 
+  if (driveUrl.includes('/folders/')) {
+    return res.status(400).json({
+      success: false,
+      error:
+        'You provided a Google Drive folder link. Please open the folder, right-click on an individual radar CSV file, click Share -> Copy link, and paste that specific file link here.',
+    });
+  }
+
   const fileId = extractDriveFileId(driveUrl);
   if (!fileId) {
     return res.status(400).json({
@@ -413,6 +421,6 @@ exports.getHealth = (req, res) => {
     modelPath: 'output/models/best_radar_model.pkl',
     defaultGoogleDriveFolder:
       process.env.GOOGLE_DRIVE_FOLDER_URL ||
-      'https://drive.google.com/drive/folders/1yashraj18111-radar-samples?usp=sharing',
+      'https://drive.google.com/drive/folders/1rVmUWYyHWgEyzrUYRLMaoy2uvZ0M1t_O?usp=sharing',
   });
 };

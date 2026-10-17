@@ -18,12 +18,17 @@ import {
 export default function GoogleDriveBox({
   onDriveClassify,
   isLoading,
-  defaultFolderUrl = 'https://drive.google.com/drive/folders/1yashraj18111-radar-samples?usp=sharing',
+  defaultFolderUrl = 'https://drive.google.com/drive/folders/1rVmUWYyHWgEyzrUYRLMaoy2uvZ0M1t_O?usp=sharing',
   apiBase = '',
 }) {
   const [inputUrl, setInputUrl] = useState('');
   const [driveFolderUrl, setDriveFolderUrl] = useState(defaultFolderUrl);
-  const [isEditingFolderUrl, setIsEditingFolderUrl] = useState(false);
+
+  React.useEffect(() => {
+    if (defaultFolderUrl) {
+      setDriveFolderUrl(defaultFolderUrl);
+    }
+  }, [defaultFolderUrl]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
